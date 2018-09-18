@@ -1,15 +1,34 @@
 %
 %img = im2double(imread('./imgs/OneBallLetteringVerticalLarge.jpg'));
-%img = im2double(imread('./imgs/OneBallCornerLarge.jpg'));
+%img = im2double(imread('./imgs/OneBallVerticalLarge.jpg'));
+img = im2double(imread('./imgs/OneBallCornerLarge.jpg'));
 %img = im2double(imread('./imgs/TwoBallsVerticalLarge.jpg'));
 %img = im2double(imread('./imgs/ThreeBallsNetLarge.jpg'));
+%img = im2double(imread('./imgs/OneBallLarge.jpg'));
+%img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));
 %img = im2double(imread('./imgs/NewBallsLarge.jpg'));
 %img = im2double(imread('./imgs/ThreeBallsCloseUpTouching.jpg'));
-img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));
+%img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));
 
 imshow(img);
 
-%img = imgaussfilt(img, 7);
+% trying  the built in matlab find circles
+if ( false )
+    d = imdistline;
+    delete(d)
+    filt = rgb2gray(img);
+    imshow(filt)
+    
+    [centers,radii] = imfindcircles(img, [20 60], 'ObjectPolarity', 'bright', 'Sensitivity', 0.9);
+    [centers2,radii2] = imfindcircles(img, [200 250], 'ObjectPolarity', 'bright', 'Sensitivity', 0.95);
+       
+    imshow(img)
+    h = viscircles(centers,radii);
+    h = viscircles(centers2,radii2);
+    
+    return
+end
+
 
 % Trying the convolution with a circle thing
 if ( false )

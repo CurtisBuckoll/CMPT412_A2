@@ -1,20 +1,23 @@
 %
-img = im2double(imread('./imgs/OneBallLetteringVerticalLarge.jpg'));
-img = im2double(imread('./imgs/OneBallVerticalLarge.jpg'));
-img = im2double(imread('./imgs/OneBallCornerLarge.jpg'));
-img = im2double(imread('./imgs/TwoBallsVerticalLarge.jpg'));
-img = im2double(imread('./imgs/ThreeBallsNetLarge.jpg'));
-img = im2double(imread('./imgs/OneBallLarge.jpg'));
-img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));
-img = im2double(imread('./imgs/NewBallsLarge.jpg'));
-img = im2double(imread('./imgs/ThreeBallsCloseUpTouching.jpg'));
-img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));
+%img = im2double(imread('./imgs/OneBallLetteringVerticalLarge.jpg'));  %OK
+%img = im2double(imread('./imgs/OneBallVerticalLarge.jpg'));           %OK
+%img = im2double(imread('./imgs/OneBallCornerLarge.jpg'));             %OK
+%img = im2double(imread('./imgs/TwoBallsVerticalLarge.jpg'));          %OK
+%img = im2double(imread('./imgs/ThreeBallsNetLarge.jpg'));             %OK
+%img = im2double(imread('./imgs/OneBallLarge.jpg'));                   %OK
+%img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));  %F2A1
+%img = im2double(imread('./imgs/NewBallsLarge.jpg'));                  %OK
+%img = im2double(imread('./imgs/ThreeBallsCloseUpTouching.jpg'));      %F2A1
+%img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));            %FWO
+%img = im2double(imread('./imgs/ThreeBallsShadowLarge.jpg'));          %F2A1
+
+img = im2double(imread('./imgs/OneBallShadowsLarge.jpg'));            %OK
 
 imshow(img);
 
 [H, W, XX] = size(img);
 scale = (0:2/H:1)';
-scale = (scale .* 0.8) + 0.2;
+scale = (scale .* 0.9) + 0.1;
 scale_col = ones([1,H]);
 scale_col(1:size(scale,1)) = scale;
 dim_mat = repmat(scale_col,W,1)';
@@ -27,11 +30,11 @@ testim = testim .* dim_mat;
 if ( true )
     % could probably fine-tune this per channel.
     img_cpy = img .* dim_mat;
-    img_cpy = imgaussfilt(img_cpy, 4.5);
+    %img_cpy = imgaussfilt(img_cpy, 4.5);
     
     imshow(img_cpy);
     
-    mask = rgb2gray(img_cpy) > 0.45;
+    mask = rgb2gray(img_cpy) > 0.5;
     
     divisor = sqrt(img_cpy(:,:,1).^2 + img_cpy(:,:,2).^2 + img_cpy(:,:,3).^2);
     %should check for zero entries.
@@ -39,21 +42,23 @@ if ( true )
     imshow(im_unit_vecs);
     
     v1 = [0.5565 0.7138 0.4251]; % OneBallLetteringVerticalLarge / OneBallVerticalLarge / OneBallCornerLarge
-    %v = [0.5320 0.7435 0.4052]; % Slight adjust for OneBallCornerLarge
+
     v2 = [0.6622 0.6622 0.3506]; % TwoBallsVerticalLarge
     v3 = [0.5871 0.7205 0.3690]; % ThreeBallsNetLarge / OneBallLarge
     v4 = [0.5996 0.6957 0.3956];
     
     %v = [0.6187 0.6876 0.3799];
     v5 = [0.5478 0.7259 0.4160];
-   
+    
+    v6 = [0.5320 0.7435 0.4052]; % Slight adjust for OneBallCornerLarge
+    v7 = [0.6637 0.6675 0.3376];
     
     %v = [0.6494 0.6494 0.3957];
     %v = [0.6105 0.6335 0.4754];
     %v = [0.6475 0.6525 0.3937];
     %v = v ./ norm(v)
     
-    vec_mat = [v1; v2; v3; v4; v5];
+    vec_mat = [v1; v2; v3; v4; v5; v6; v7];
     
     gradient_map = zeros(H, W);
     
@@ -70,13 +75,26 @@ if ( true )
     
     %imshow( gradient_map ./ sz );
     
-    filt = gradient_map > 0.996 * sz;
-
-    %filt = dot(im_unit_vecs, to_dot, 3) > 0.995;
+    
+    filt = gradient_map > (0.992 * sz);
+    
+    imshow(filt);
+    
+    filt = bwareaopen(filt, 150); % was 75 before.
     
     imshow(filt);
 
-    filt = imdilate(filt, strel('disk', 30));
+    filt = imdilate(filt, strel('disk', 15));
+    
+    
+    
+    %filt = imdilate(filt, strel('disk', 5));
+    
+    %imshow(filt);
+    
+    %filt = imerode(filt, strel('disk', 10));
+    
+    
     
     imshow(filt);
     

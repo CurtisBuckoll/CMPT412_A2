@@ -1,16 +1,101 @@
 %
-%img = im2double(imread('./imgs/OneBallLetteringVerticalLarge.jpg'));
-%img = im2double(imread('./imgs/OneBallVerticalLarge.jpg'));
+img = im2double(imread('./imgs/OneBallLetteringVerticalLarge.jpg'));
+img = im2double(imread('./imgs/OneBallVerticalLarge.jpg'));
 img = im2double(imread('./imgs/OneBallCornerLarge.jpg'));
-%img = im2double(imread('./imgs/TwoBallsVerticalLarge.jpg'));
-%img = im2double(imread('./imgs/ThreeBallsNetLarge.jpg'));
-%img = im2double(imread('./imgs/OneBallLarge.jpg'));
-%img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));
-%img = im2double(imread('./imgs/NewBallsLarge.jpg'));
-%img = im2double(imread('./imgs/ThreeBallsCloseUpTouching.jpg'));
-%img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));
+img = im2double(imread('./imgs/TwoBallsVerticalLarge.jpg'));
+img = im2double(imread('./imgs/ThreeBallsNetLarge.jpg'));
+img = im2double(imread('./imgs/OneBallLarge.jpg'));
+img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));
+img = im2double(imread('./imgs/NewBallsLarge.jpg'));
+img = im2double(imread('./imgs/ThreeBallsCloseUpTouching.jpg'));
+img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));
 
 imshow(img);
+
+[H, W, XX] = size(img);
+scale = (0:2/H:1)';
+scale = (scale .* 0.8) + 0.2;
+scale_col = ones([1,H]);
+scale_col(1:size(scale,1)) = scale;
+dim_mat = repmat(scale_col,W,1)';
+
+
+testim = ones(H,W) .* 2;
+testim = testim .* dim_mat;
+
+%Trying to normalize colour vectors and taking a dot product.
+if ( true )
+    % could probably fine-tune this per channel.
+    img_cpy = img .* dim_mat;
+    img_cpy = imgaussfilt(img_cpy, 4.5);
+    
+    imshow(img_cpy);
+    
+    mask = rgb2gray(img_cpy) > 0.45;
+    
+    divisor = sqrt(img_cpy(:,:,1).^2 + img_cpy(:,:,2).^2 + img_cpy(:,:,3).^2);
+    %should check for zero entries.
+    im_unit_vecs = (img_cpy ./ divisor) .* mask;
+    imshow(im_unit_vecs);
+    
+    v1 = [0.5565 0.7138 0.4251]; % OneBallLetteringVerticalLarge / OneBallVerticalLarge / OneBallCornerLarge
+    %v = [0.5320 0.7435 0.4052]; % Slight adjust for OneBallCornerLarge
+    v2 = [0.6622 0.6622 0.3506]; % TwoBallsVerticalLarge
+    v3 = [0.5871 0.7205 0.3690]; % ThreeBallsNetLarge / OneBallLarge
+    v4 = [0.5996 0.6957 0.3956];
+    
+    %v = [0.6187 0.6876 0.3799];
+    v5 = [0.5478 0.7259 0.4160];
+   
+    
+    %v = [0.6494 0.6494 0.3957];
+    %v = [0.6105 0.6335 0.4754];
+    %v = [0.6475 0.6525 0.3937];
+    %v = v ./ norm(v)
+    
+    vec_mat = [v1; v2; v3; v4; v5];
+    
+    gradient_map = zeros(H, W);
+    
+    sz = size(vec_mat, 1);
+    for i=1:sz
+        v = vec_mat(i,:);
+        to_dot = zeros(H, W, 3);
+        to_dot(:,:,1) = v(1);
+        to_dot(:,:,2) = v(2);
+        to_dot(:,:,3) = v(3);
+    
+        gradient_map = gradient_map + dot(im_unit_vecs, to_dot, 3);
+    end
+    
+    %imshow( gradient_map ./ sz );
+    
+    filt = gradient_map > 0.996 * sz;
+
+    %filt = dot(im_unit_vecs, to_dot, 3) > 0.995;
+    
+    imshow(filt);
+
+    filt = imdilate(filt, strel('disk', 30));
+    
+    imshow(filt);
+    
+    filt = imfill(filt, 'holes');
+    
+    imshow(filt);
+    
+    filt=bwmorph(filt,'shrink',Inf);
+   
+    
+    [y,x] = find(filt > 0);
+    imshow(img);
+    hold on;
+    plot(x, y, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
+    hold off;
+    
+    return;
+end
+
 
 % trying  the built in matlab find circles
 if ( false )

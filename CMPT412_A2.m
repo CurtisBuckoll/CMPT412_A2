@@ -8,29 +8,45 @@
 %img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));  %F2A1
 %img = im2double(imread('./imgs/NewBallsLarge.jpg'));                  %OK
 %img = im2double(imread('./imgs/ThreeBallsCloseUpTouching.jpg'));      %F2A1
+
 %img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));            %FWO
 %img = im2double(imread('./imgs/ThreeBallsShadowLarge.jpg'));          %F2A1
+%img = im2double(imread('./imgs/OneBallShadowsLarge.jpg'));            %OK
 
-img = im2double(imread('./imgs/OneBallShadowsLarge.jpg'));            %OK
+img = im2double(imread('./imgs/extra/4.jpg'));
 
 imshow(img);
 
 [H, W, XX] = size(img);
-scale = (0:2/H:1)';
+scale = (0:1.5/H:1)'; % can make this scale adaptively by taking into consideration the top/bottom intensity ratio.
 scale = (scale .* 0.9) + 0.1;
 scale_col = ones([1,H]);
 scale_col(1:size(scale,1)) = scale;
 dim_mat = repmat(scale_col,W,1)';
 
 
-testim = ones(H,W) .* 2;
-testim = testim .* dim_mat;
+%testim = ones(H,W) .* 2;
+%testim = testim .* dim_mat;
 
 %Trying to normalize colour vectors and taking a dot product.
 if ( true )
-    % could probably fine-tune this per channel.
-    img_cpy = img .* dim_mat;
+    
+    img_cpy = img;
+    
+    % is the top half of the screen darker?
+    teess = img(1:floor(H/2),:,:);
+    sum_top = sum(sum(sum(img(1:floor(H/2),:,:))))
+    sum_bot = sum(sum(sum(img(ceil(H/2):H,:,:))))
+    vert_intensity_ratio = sum_top / sum_bot
+    if ( vert_intensity_ratio > 1.5 )
+        % could probably fine-tune this per channel.
+        img_cpy = img_cpy .* dim_mat;
+    end
+    
     %img_cpy = imgaussfilt(img_cpy, 4.5);
+    %img_cpy(:,:,1) = imadjust(img_cpy(:,:,1));
+    %img_cpy(:,:,2) = imadjust(img_cpy(:,:,2));
+    %img_cpy(:,:,3) = imadjust(img_cpy(:,:,3));
     
     imshow(img_cpy);
     
@@ -80,11 +96,15 @@ if ( true )
     
     imshow(filt);
     
+    filt = imerode(filt, strel('disk', 1)); % this was added lol - Skews the result for NewBallsLarge/OneBallShadowsLarge, but still works.
+    
+    imshow(filt);
+    
     filt = bwareaopen(filt, 150); % was 75 before.
     
     imshow(filt);
 
-    filt = imdilate(filt, strel('disk', 15));
+    filt = imdilate(filt, strel('diamond', 15)); % maybe try a square?
     
     
     
@@ -102,14 +122,98 @@ if ( true )
     
     imshow(filt);
     
-    filt=bwmorph(filt,'shrink',Inf);
+    % --- New test code
+    
+    [Y,X] = find(bwmorph(filt,'shrink',Inf) > 0);
+    
+    for i=1:size(Y,1)
+        seg_w = 1;
+        seg_h = 1;
+        start_x = X(i);
+        start_y = Y(i);
+        while true
+            if filt(start_y, start_x - 1) == 0
+                break;
+            end
+            seg_w = seg_w + 1;
+            start_x = start_x - 1;
+        end
+        start_x = X(i);
+        while true
+            if filt(start_y, start_x + 1) == 0
+                break;
+            end
+            seg_w = seg_w + 1;
+            start_x = start_x + 1;
+        end
+        start_x = X(i);
+        while true
+            if filt(start_y - 1, start_x) == 0
+                break;
+            end
+            seg_h = seg_h + 1;
+            start_y = start_y - 1;
+        end
+        start_y = Y(i);
+        while true
+            if filt(start_y + 1, start_x) == 0
+                break;
+            end
+            seg_h = seg_h + 1;
+            start_y = start_y + 1;
+        end
+        
+        h_to_w = seg_h / seg_w
+        w_to_h = seg_w / seg_h
+        
+        if ( h_to_w > 2.02 )
+            filt(Y(i)-1:Y(i)+1, X(i)-seg_w:X(i)+seg_w) = 0;
+        elseif ( w_to_h > 2.02 )
+            filt(Y(i)-seg_h:Y(i)+seg_h, X(i)-1:X(i)+1) = 0;
+        end
+        
+    end
+    
+    imshow(filt);
+    
+    % --- end
+    
+    filt = bwmorph(filt,'shrink',Inf);
    
     
     [y,x] = find(filt > 0);
     imshow(img);
     hold on;
-    plot(x, y, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
+    plot(x, y, 'r+', 'MarkerSize', 30, 'LineWidth', 1.5);
     hold off;
+    
+    %     % watershed thing ***********************************************
+%     %use watershed analysis
+%     filt2 = -bwdist(~filt,'euclidean');
+%     %imshow(filt2);
+%     filt2(~filt) = -inf;  %set background to be infinitely far away
+%     filt2 = watershed(filt2);
+%     %imshow(filt2)
+%     
+%     %imshow(img)
+%     %get the region properties
+%     props = regionprops(filt2,'centroid','equivdiameter','perimeter');
+%     %plot the results
+%     figure;
+%     imshow(img);
+%     hold on;
+%     %loop over all detected objects
+%     for ai = 1:length(props)
+%         %check if it is a circle
+%         %if abs(props(ai).Perimeter-pi*props(ai).EquivDiameter)/props(ai).EquivDiameter > 13
+%             %plot the detected centroid
+%             plot(props(ai).Centroid(1), props(ai).Centroid(2), 'r+', 'MarkerSize', 30, 'LineWidth', 2);
+%         %end
+%     end
+%     hold off;
+%     
+%     return
+%     % //watershed thing *********************************************
     
     return;
 end

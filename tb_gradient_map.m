@@ -1,11 +1,13 @@
 function [gmap, num_vecs] = tb_gradient_map(img)
     [H, W, XX] = size(img);
-    % probably should check for zero entries.
+    % probably should check for zero entries..
     divisor = sqrt(img(:,:,1).^2 + img(:,:,2).^2 + img(:,:,3).^2);
     
-    im_unit_vecs = (img ./ divisor); % .* mask;
+    im_unit_vecs = (img ./ divisor);
     imshow(im_unit_vecs);
 
+    % The v_i represent the target pixels closest to what we want to find,
+    % as normalized unit vectors.
     v1 = [0.5565 0.7138 0.4251]; % OneBallLetteringVerticalLarge / OneBallVerticalLarge / OneBallCornerLarge
     v2 = [0.6622 0.6622 0.3506]; % TwoBallsVerticalLarge
     v3 = [0.5871 0.7205 0.3690]; % ThreeBallsNetLarge / OneBallLarge

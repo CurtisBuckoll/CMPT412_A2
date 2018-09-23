@@ -41,8 +41,6 @@ function r = find_radius(img, X, Y)
             r(i) = seg_w / 2;
         else
             r(i) = seg_h / 2;
-        end
-        
+        end   
     end
-
 end

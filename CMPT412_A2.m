@@ -5,15 +5,14 @@
 %img = im2double(imread('./imgs/TwoBallsVerticalLarge.jpg'));          %OK
 %img = im2double(imread('./imgs/ThreeBallsNetLarge.jpg'));             %OK
 %img = im2double(imread('./imgs/OneBallLarge.jpg'));                   %OK
-%img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));  %F2A1
+img = im2double(imread('./imgs/TwoBallsTouchingVerticalLarge.jpg'));  %F2A1
 %img = im2double(imread('./imgs/NewBallsLarge.jpg'));                  %OK
 %img = im2double(imread('./imgs/ThreeBallsCloseUpTouching.jpg'));      %F2A1
-
 %img = im2double(imread('./imgs/TwoBallsShadowLarge.jpg'));            %FWO
 %img = im2double(imread('./imgs/ThreeBallsShadowLarge.jpg'));          %F2A1
 %img = im2double(imread('./imgs/OneBallShadowsLarge.jpg'));            %OK
 
-img = im2double(imread('./imgs/extra/4.jpg'));
+%img = im2double(imread('./imgs/extra/4.jpg'));
 
 imshow(img);
 
@@ -24,9 +23,6 @@ scale_col = ones([1,H]);
 scale_col(1:size(scale,1)) = scale;
 dim_mat = repmat(scale_col,W,1)';
 
-
-%testim = ones(H,W) .* 2;
-%testim = testim .* dim_mat;
 
 %Trying to normalize colour vectors and taking a dot product.
 if ( true )
@@ -43,6 +39,22 @@ if ( true )
         img_cpy = img_cpy .* dim_mat;
     end
     
+    rough_mask = rgb2gray(img_cpy) > 0.4;
+    img_blurred = imgaussfilt(img_cpy, 10);
+    [rough_gradient, sz] = tb_gradient_map(img_blurred);
+    rough_gradient = rough_gradient .* rough_mask;
+    rough_area = rough_gradient > (0.990 * sz);
+    
+    imshow(rough_area);
+    rough_area = imerode(rough_area, strel('disk', 1));
+    imshow(rough_area);
+    rough_area = bwareaopen(rough_area, 100);
+    imshow(rough_area);
+    rough_area = imdilate(rough_area, strel('disk', 50));
+    imshow(rough_area);
+    rough_area = imfill(rough_area, 'holes');
+    imshow(rough_area);
+    
     %img_cpy = imgaussfilt(img_cpy, 4.5);
     %img_cpy(:,:,1) = imadjust(img_cpy(:,:,1));
     %img_cpy(:,:,2) = imadjust(img_cpy(:,:,2));
@@ -52,46 +64,47 @@ if ( true )
     
     mask = rgb2gray(img_cpy) > 0.5;
     
-    divisor = sqrt(img_cpy(:,:,1).^2 + img_cpy(:,:,2).^2 + img_cpy(:,:,3).^2);
-    %should check for zero entries.
-    im_unit_vecs = (img_cpy ./ divisor) .* mask;
-    imshow(im_unit_vecs);
-    
-    v1 = [0.5565 0.7138 0.4251]; % OneBallLetteringVerticalLarge / OneBallVerticalLarge / OneBallCornerLarge
-
-    v2 = [0.6622 0.6622 0.3506]; % TwoBallsVerticalLarge
-    v3 = [0.5871 0.7205 0.3690]; % ThreeBallsNetLarge / OneBallLarge
-    v4 = [0.5996 0.6957 0.3956];
-    
-    %v = [0.6187 0.6876 0.3799];
-    v5 = [0.5478 0.7259 0.4160];
-    
-    v6 = [0.5320 0.7435 0.4052]; % Slight adjust for OneBallCornerLarge
-    v7 = [0.6637 0.6675 0.3376];
-    
-    %v = [0.6494 0.6494 0.3957];
-    %v = [0.6105 0.6335 0.4754];
-    %v = [0.6475 0.6525 0.3937];
-    %v = v ./ norm(v)
-    
-    vec_mat = [v1; v2; v3; v4; v5; v6; v7];
-    
-    gradient_map = zeros(H, W);
-    
-    sz = size(vec_mat, 1);
-    for i=1:sz
-        v = vec_mat(i,:);
-        to_dot = zeros(H, W, 3);
-        to_dot(:,:,1) = v(1);
-        to_dot(:,:,2) = v(2);
-        to_dot(:,:,3) = v(3);
-    
-        gradient_map = gradient_map + dot(im_unit_vecs, to_dot, 3);
-    end
+%     divisor = sqrt(img_cpy(:,:,1).^2 + img_cpy(:,:,2).^2 + img_cpy(:,:,3).^2);
+%     %should check for zero entries.
+%     im_unit_vecs = (img_cpy ./ divisor) .* mask;
+%     imshow(im_unit_vecs);
+%     
+%     v1 = [0.5565 0.7138 0.4251]; % OneBallLetteringVerticalLarge / OneBallVerticalLarge / OneBallCornerLarge
+% 
+%     v2 = [0.6622 0.6622 0.3506]; % TwoBallsVerticalLarge
+%     v3 = [0.5871 0.7205 0.3690]; % ThreeBallsNetLarge / OneBallLarge
+%     v4 = [0.5996 0.6957 0.3956];
+%     
+%     %v = [0.6187 0.6876 0.3799];
+%     v5 = [0.5478 0.7259 0.4160];
+%     
+%     v6 = [0.5320 0.7435 0.4052]; % Slight adjust for OneBallCornerLarge
+%     v7 = [0.6637 0.6675 0.3376];
+%     
+%     %v = [0.6494 0.6494 0.3957];
+%     %v = [0.6105 0.6335 0.4754];
+%     %v = [0.6475 0.6525 0.3937];
+%     %v = v ./ norm(v)
+%     
+%     vec_mat = [v1; v2; v3; v4; v5; v6; v7];
+%     
+%     gradient_map = zeros(H, W);
+%     
+%     sz = size(vec_mat, 1);
+%     for i=1:sz
+%         v = vec_mat(i,:);
+%         to_dot = zeros(H, W, 3);
+%         to_dot(:,:,1) = v(1);
+%         to_dot(:,:,2) = v(2);
+%         to_dot(:,:,3) = v(3);
+%     
+%         gradient_map = gradient_map + dot(im_unit_vecs, to_dot, 3);
+%     end
     
     %imshow( gradient_map ./ sz );
     
-    
+    [gradient_map, sz] = tb_gradient_map(img_cpy);
+    gradient_map = gradient_map .* mask;
     filt = gradient_map > (0.992 * sz);
     
     imshow(filt);
@@ -168,24 +181,39 @@ if ( true )
         
         if ( h_to_w > 2.02 )
             filt(Y(i)-1:Y(i)+1, X(i)-seg_w:X(i)+seg_w) = 0;
+            rough_area(Y(i)-1:Y(i)+1, X(i)-seg_w:X(i)+seg_w) = 0;
         elseif ( w_to_h > 2.02 )
             filt(Y(i)-seg_h:Y(i)+seg_h, X(i)-1:X(i)+1) = 0;
+            rough_area(Y(i)-seg_h*2:Y(i)+seg_h*2, X(i)-1:X(i)+1) = 0;
         end
         
     end
     
     imshow(filt);
+    imshow(rough_area);
     
     % --- end
     
-    filt = bwmorph(filt,'shrink',Inf);
-   
+    filt_shrink = bwmorph(filt,'shrink',Inf);
+  
     
-    [y,x] = find(filt > 0);
+    [y,x] = find(filt_shrink > 0);
     imshow(img);
     hold on;
     plot(x, y, 'r+', 'MarkerSize', 30, 'LineWidth', 1.5);
     hold off;
+    
+    radii = find_radius(filt, x, y)
+    
+    % probably not bother with this.. improves half the time but makes
+    % worse the other half. just roll with the initial findings.
+    [X,Y] = find_centers(rough_area, x, y);
+    imshow(img);
+    hold on;
+    plot(X, Y, 'r+', 'MarkerSize', 30, 'LineWidth', 1.5);
+    hold off;
+    
+    radii = find_radius(filt, X', Y')
     
     %     % watershed thing ***********************************************
 %     %use watershed analysis
